@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icons/dartboard.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icons/dartboard.svg" type="image/svg+xml">
+<meta name="mobile-web-app-capable" content="yes">
+<title>My Darts App - Android Scoring App</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+/* Mobile app viewport optimization */
+html, body {
+height: 100%;
+max-height: 100vh;
+overflow: hidden;
+touch-action: manipulation;
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+user-select: none;
+}
+.custom-scrollbar::-webkit-scrollbar {
+width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+background: #4B5563;
+border-radius: 4px;
+}
+</style>
+</head>
+<body class="bg-slate-900 text-white flex flex-col h-full justify-between select-none">
+
+<!-- APP CONTAINER -->
+<div id="app" class="flex flex-col h-full w-full max-w-md mx-auto bg-slate-800 shadow-2xl relative overflow-hidden">
+
+<!-- HEADER / NAVIGATION -->
+<header class="bg-slate-950 px-3 py-1 flex items-center justify-between border-b border-slate-700 h-10 flex-shrink-0">
+<div class="flex items-center space-x-2">
+<i class="fa-solid fa-crosshair text-red-500 text-base"></i>
+<span class="font-bold text-sm tracking-wide text-slate-100" id="header-title">My Darts App</span>
+</div>
+<div class="flex items-center space-x-1">
+<button id="btn-nav-menu" onclick="playAudio('click'); confirmHomeExit()" class="p-1.5 text-slate-300 hover:text-white rounded active:bg-slate-800 text-sm">
+<i class="fa-solid fa-house"></i>
+</button>
+<button id="btn-nav-profiles" onclick="playAudio('click'); confirmHomeExitWithScreen('screen-profiles')" class="p-1.5 text-slate-300 hover:text-white rounded active:bg-slate-800 text-sm">
+<i class="fa-solid fa-user-gear"></i>
+</button>
+<button id="btn-nav-stats" onclick="playAudio('click'); confirmHomeExitWithScreen('screen-stats')" class="p-1.5 text-slate-300 hover:text-white rounded active:bg-slate-800 text-sm">
+<i class="fa-solid fa-chart-column"></i>
+</button>
+		<button id="btn-install" onclick="promptInstall()" class="p-1.5 text-slate-300 hover:text-white rounded active:bg-slate-800 text-sm hidden">
+			<i class="fa-solid fa-download"></i>
+		</button>
+</div>
+</header>
+
+<!-- MAIN CONTENT CONTAINER -->
+<main class="flex-1 relative overflow-hidden flex flex-col">
+
+<!-- ================= 1. MAIN MENU SCREEN ================= -->
+<section id="screen-menu" class="absolute inset-0 p-4 flex flex-col justify-between bg-slate-900 z-10 overflow-y-auto">
+<div class="text-center py-1">
+<h1 class="text-4xl font-black text-amber-500 tracking-wider">MY DARTS APP</h1>
+<p class="text-xs text-slate-400">Score and Stats Tracker</p>
+</div>
+
+<!-- Mode Selection -->
+<div class="space-y-3 my-auto">
+<div class="bg-slate-800 p-3.5 rounded-xl border border-slate-700">
+<label class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 block">Game Mode</label>
+<div class="grid grid-cols-3 gap-2">
+<button onclick="playAudio('click'); selectGameType('301')" class="game-type-btn p-3 rounded-xl font-black text-base active:scale-95 transition" id="gt-301">301</button>
+<button onclick="playAudio('click'); selectGameType('501')" class="game-type-btn p-3 rounded-xl font-black text-base active:scale-95 transition bg-amber-600 border border-amber-400 text-white shadow-lg" id="gt-501">501</button>
+<button onclick="playAudio('click'); selectGameType('701')" class="game-type-btn p-3 rounded-xl font-black text-base active:scale-95 transition" id="gt-701">701</button>
+</div>
+</div>
+
+<!-- Match Config (Legs / Sets / Starting Rule) -->
+<div id="x01-config" class="space-y-2.5 bg-slate-800 p-3.5 rounded-xl border border-slate-700">
+<div class="grid grid-cols-2 gap-2.5">
+<div>
+<label class="text-xs text-slate-400 block mb-1">Legs Format</label>
+<select id="select-legs" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm font-bold text-center">
+<option value="1">Best of 1</option>
+<option value="3" selected>Best of 3</option>
+<option value="5">Best of 5</option>
+<option value="7">Best of 7</option>
+</select>
+</div>
+<div>
+<label class="text-xs text-slate-400 block mb-1">Sets Format</label>
+<select id="select-sets" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm font-bold text-center">
+<option value="1" selected>Best of 1</option>
+<option value="3">Best of 3</option>
+<option value="5">Best of 5</option>
+</select>
+</div>
+</div>
+<div>
+<label class="text-xs text-slate-400 block mb-1">Next Leg Start Order</label>
+<select id="select-start-rule" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm font-bold text-center text-amber-400">
+<option value="alternating" selected>Alternating Order</option>
+<option value="loser">Loser Starts Next Leg</option>
+</select>
+</div>
+</div>
+
+<!-- Player Selection (Dynamic Pickers 1 to 4) -->
+<div class="bg-slate-800 p-3.5 rounded-xl border border-slate-700 space-y-2.5">
+<div class="flex justify-between items-center">
+<label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Match Players</label>
+<button onclick="playAudio('click'); openNewProfileModal()" class="text-emerald-400 hover:text-emerald-300 text-xs font-bold flex items-center space-x-1 py-1 px-2 rounded bg-emerald-950/40 border border-emerald-500/30">
+<i class="fa-solid fa-user-plus"></i><span>+ Add Profile</span>
+</button>
+</div>
+
+<!-- Profile Assign Pickers -->
+<div class="space-y-2 pt-1" id="player-pickers-container">
+<!-- Dynamically Populated -->
+</div>
+</div>
+</div>
+
+<button onclick="playAudio('submit'); startMatch()" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xl tracking-wider rounded-xl shadow-lg border border-emerald-400 active:scale-95 transition">
+START MATCH
+</button>
+</section>
+
+<!-- ================= 2. X01 GAMEPLAY SCREEN ================= -->
+<section id="screen-x01" class="absolute inset-0 p-2 flex flex-col justify-between hidden bg-slate-900 overflow-y-auto custom-scrollbar">
+<!-- Compact Upper Area -->
+<div class="flex-shrink-0 space-y-1">
+<!-- Match Status Banner -->
+<div class="bg-slate-950 rounded-lg py-1 px-2.5 flex justify-between items-center text-xs border border-slate-800">
+<div>
+<span class="text-amber-500 font-bold" id="x01-game-title">501</span> |
+<span>Sets: <b id="x01-sets-display">0-0</b></span> |
+<span>Legs: <b id="x01-legs-display">0-0</b></span>
+</div>
+<div class="text-slate-400">
+Round <span id="x01-round-display" class="font-bold text-white">1</span>
+</div>
+</div>
+
+<!-- Players Score Cards Display -->
+<div class="grid gap-1.5 my-0.5" id="x01-players-grid">
+<!-- Populated dynamically -->
+</div>
+</div>
+
+<!-- Score Display Box -->
+<div class="my-0.5 flex items-center justify-center flex-shrink-0">
+<div id="input-box-container" class="bg-slate-950 px-5 py-1 rounded-xl border border-slate-700 flex flex-col items-center min-w-[140px] shadow-md transition-colors">
+<div class="flex justify-between items-center w-full space-x-3 border-b border-slate-800 pb-0.5">
+<span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest" id="input-mode-badge">TOTAL SCORE</span>
+<span class="text-[10px] text-slate-400 font-medium">prev: <b id="x01-prev-score" class="text-amber-300 font-bold">-</b></span>
+</div>
+<span class="text-2xl font-black font-mono tracking-wider text-amber-400" id="x01-input-display">0</span>
+</div>
+</div>
+
+<!-- BUST ALERT BANNER -->
+<div id="x01-bust-alert" class="hidden bg-red-600/90 text-white text-xs font-bold py-1 px-2 rounded-lg text-center border border-red-400 flex items-center justify-center space-x-1.5 flex-shrink-0">
+<i class="fa-solid fa-triangle-exclamation"></i>
+<span id="bust-alert-text">BUST! Turn scored 0.</span>
+</div>
+
+<!-- Comfortably Sized Keypads Area -->
+<div class="flex-shrink-0 pb-1">
+
+<!-- MODE A: TOTAL SCORE INPUT KEYPAD (Score > 170) -->
+<div id="x01-keypad-total" class="space-y-1.5">
+<!-- 9 Quick Favorites Bar -->
+<div class="bg-slate-950/80 p-1.5 rounded-xl border border-slate-800">
+<div class="grid grid-cols-3 gap-1.5" id="x01-favorites-bar">
+<!-- Populated dynamically (3x3 grid) -->
+</div>
+</div>
+
+<!-- Main Numpad with standard comfortable button dimensions -->
+<div class="grid grid-cols-3 gap-1.5 text-2xl font-black">
+<button onclick="playAudio('click'); appendNum(1)" class="bg-slate-700 hover:bg-slate-600 active:bg-amber-600 py-2 rounded-xl border border-slate-600 shadow-md">1</button>
+<button onclick="playAudio('click'); appendNum(2)" class="bg-slate-700 hover:bg-slate-600 active:bg-amber-600 py-2 rounded-xl border border-slate-600 shadow-md">2</button>
+<button onclick="playAudio('click'); appendNum(3)" class="bg-slate-700 hover:bg-slate-600 active:bg-amber-600 py-2 rounded-xl border border-slate-600 shadow-md">3</button>
+<button onclick="playAudio('click'); appendNum(4)" class="bg-slate-700 hover:bg-slate-600 active:bg-amber-600 py-2 rounded-xl border border-slate-600 shadow-md">4</button>
+<button onclick="playAudio('click'); appendNum(5)" class="bg-slate-700 hover:bg-slate-600 active:bg-amber-600 py-2 rounded-xl border border-slate-600 shadow-md">5</button>
+<button onclick="playAudio('click'); appendNum(6)" class="bg-slate-700 hover:bg-slate-600 active:bg-amber-600 py-2 rounded-xl border border-slate-600 shadow-md">6</button>
+<button onclick="playAudio('click'); appendNum(7)" class="bg-slate-700 hover:bg-slate-600 active:bg-amber-600 py-2 rounded-xl border border-slate-600 shadow-md">7</button>
+<button onclick="playAudio('click'); appendNum(8)" class="bg-slate-700 hover:bg-slate-600 active:bg-amber-600 py-2 rounded-xl border border-slate-600 shadow-md">8</button>
+<button onclick="playAudio('click'); appendNum(9)" class="bg-slate-700 hover:bg-slate-600 active:bg-amber-600 py-2 rounded-xl border border-slate-600 shadow-md">9</button>
+<button onclick="playAudio('clear'); clearInput()" class="bg-rose-900/80 hover:bg-rose-800 active:bg-rose-700 text-rose-200 py-2 rounded-xl border border-rose-700 text-base font-black shadow-md">CLR</button>
+<button onclick="playAudio('click'); appendNum(0)" class="bg-slate-700 hover:bg-slate-600 active:bg-amber-600 py-2 rounded-xl border border-slate-600 shadow-md">0</button>
+<button onclick="playAudio('undo'); undoLastTurn()" class="bg-amber-800 hover:bg-amber-700 active:bg-amber-600 text-amber-100 py-2 rounded-xl border border-amber-600 text-sm font-black flex items-center justify-center space-x-1 shadow-md">
+<i class="fa-solid fa-rotate-left"></i><span>UNDO</span>
+</button>
+</div>
+<button onclick="playAudio('submit'); confirmScoreX01()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 font-black text-xl text-white rounded-xl shadow-lg border border-emerald-400 active:scale-95 transition mt-1">
+CONFIRM SCORE
+</button>
+</div>
+
+<!-- MODE B: PER-DART SCORING KEYPAD (Score <= 170) -->
+<div id="x01-keypad-perdart" class="hidden space-y-1.5">
+<!-- Dart Throws Display Tracker -->
+<div class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-lg border border-slate-700 text-center text-xs">
+<div id="dart-1-val" class="py-1 rounded bg-slate-800 font-bold text-xs">D1: -</div>
+<div id="dart-2-val" class="py-1 rounded bg-slate-800 font-bold text-xs">D2: -</div>
+<div id="dart-3-val" class="py-1 rounded bg-slate-800 font-bold text-xs">D3: -</div>
+</div>
+
+<!-- Dart Modifier Buttons -->
+<div class="grid grid-cols-3 gap-1 text-xs font-black">
+<button onclick="playAudio('click'); setDartMultiplier(1)" id="mod-single" class="bg-amber-600 py-2.5 rounded-lg border border-amber-400 shadow">SINGLE</button>
+<button onclick="playAudio('click'); setDartMultiplier(2)" id="mod-double" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow">DOUBLE</button>
+<button onclick="playAudio('click'); setDartMultiplier(3)" id="mod-triple" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow">TRIPLE</button>
+</div>
+
+<!-- Number grid for per-dart with enlarged text (text-xl) keeping identical box height (py-2.5) -->
+<div class="grid grid-cols-7 gap-1 text-xl font-black">
+<button onclick="playAudio('click'); inputPerDart(1)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">1</button>
+<button onclick="playAudio('click'); inputPerDart(2)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">2</button>
+<button onclick="playAudio('click'); inputPerDart(3)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">3</button>
+<button onclick="playAudio('click'); inputPerDart(4)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">4</button>
+<button onclick="playAudio('click'); inputPerDart(5)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">5</button>
+<button onclick="playAudio('click'); inputPerDart(6)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">6</button>
+<button onclick="playAudio('click'); inputPerDart(7)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">7</button>
+<button onclick="playAudio('click'); inputPerDart(8)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">8</button>
+<button onclick="playAudio('click'); inputPerDart(9)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">9</button>
+<button onclick="playAudio('click'); inputPerDart(10)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">10</button>
+<button onclick="playAudio('click'); inputPerDart(11)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">11</button>
+<button onclick="playAudio('click'); inputPerDart(12)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">12</button>
+<button onclick="playAudio('click'); inputPerDart(13)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">13</button>
+<button onclick="playAudio('click'); inputPerDart(14)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">14</button>
+<button onclick="playAudio('click'); inputPerDart(15)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">15</button>
+<button onclick="playAudio('click'); inputPerDart(16)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">16</button>
+<button onclick="playAudio('click'); inputPerDart(17)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">17</button>
+<button onclick="playAudio('click'); inputPerDart(18)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">18</button>
+<button onclick="playAudio('click'); inputPerDart(19)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">19</button>
+<button onclick="playAudio('click'); inputPerDart(20)" class="bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow flex items-center justify-center">20</button>
+<button onclick="playAudio('click'); inputPerDart(25)" class="bg-red-700 py-2.5 rounded-lg border border-red-500 text-sm font-black shadow flex items-center justify-center">BULL</button>
+</div>
+
+<!-- Action controls for Per-Dart (MISS, CLR, UNDO, SUBMIT) made taller (py-3.5) and larger (text-sm/font-black) -->
+<div class="grid grid-cols-4 gap-1 pt-0.5">
+<button onclick="playAudio('click'); inputPerDart(0)" class="bg-slate-800 text-slate-300 py-3.5 rounded-lg font-black text-sm border border-slate-700 shadow active:scale-95 transition">MISS (0)</button>
+<button onclick="playAudio('clear'); clearPerDart()" class="bg-rose-900/80 hover:bg-rose-800 text-rose-200 py-3.5 rounded-lg font-black text-sm border border-rose-700 shadow active:scale-95 transition">CLR</button>
+<button onclick="playAudio('undo'); undoLastTurn()" class="bg-amber-800 hover:bg-amber-700 text-white py-3.5 rounded-lg font-black text-sm border border-amber-600 shadow active:scale-95 transition">UNDO</button>
+<button onclick="playAudio('submit'); confirmScoreX01()" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-lg font-black text-sm border border-emerald-400 shadow active:scale-95 transition">SUBMIT</button>
+</div>
+</div>
+
+</div>
+</section>
+
+<!-- ================= 3. PLAYER PROFILES & FAVORITES SCREEN ================= -->
+<section id="screen-profiles" class="absolute inset-0 p-3.5 flex flex-col justify-between hidden bg-slate-900 z-10 overflow-y-auto">
+<div class="space-y-3.5">
+<div class="flex justify-between items-center">
+<h2 class="text-2xl font-black text-amber-500">Player Profiles</h2>
+<button onclick="playAudio('click'); openNewProfileModal()" class="px-3 py-1.5 bg-emerald-600 text-xs rounded-lg font-bold hover:bg-emerald-500 border border-emerald-400">
+• New Profile
+</button>
+			<button onclick="playAudio('click'); exportPngIcons()" class="px-3 py-1.5 bg-slate-700 text-xs rounded-lg font-bold hover:bg-slate-600 border border-slate-600 text-amber-300">
+				Export Icons
+			</button>
+</div>
+
+<!-- Profile List -->
+<div id="profiles-list-container" class="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar p-1">
+<!-- Populated dynamically -->
+</div>
+
+<!-- Edit Profile Favorite Scores -->
+<div id="favorites-section-container" class="bg-slate-800 p-3.5 rounded-xl border border-slate-700 space-y-2.5">
+<h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider" id="favorites-profile-title">Programmable Quick Scores</h3>
+<p class="text-[10px] text-slate-400">Customize 9 quick input buttons for the selected player profile.</p>
+
+<div class="grid grid-cols-3 gap-2" id="favorites-edit-grid">
+<!-- Dynamically Populated 9 Inputs -->
+</div>
+<button onclick="playAudio('submit'); saveProfileFavorites()" class="w-full py-2 bg-amber-600 text-xs font-bold rounded-lg hover:bg-amber-500 border border-amber-400">
+Save Favorites
+</button>
+</div>
+</div>
+
+<button onclick="playAudio('click'); showScreen('screen-menu')" class="w-full py-3 bg-slate-700 font-bold rounded-xl text-sm mt-2 border border-slate-600">
+Back to Main Menu
+</button>
+</section>
+
+<!-- ================= 4. STATISTICS SCREEN ================= -->
+<section id="screen-stats" class="absolute inset-0 p-3.5 flex flex-col justify-between hidden bg-slate-900 z-10 overflow-y-auto">
+<div class="space-y-3.5">
+<div class="flex justify-between items-center">
+<h2 class="text-2xl font-black text-amber-500">Player Statistics</h2>
+<select id="stats-time-filter" onchange="renderStats()" class="bg-slate-800 border border-slate-700 text-xs rounded-lg p-1.5 font-bold text-amber-300">
+<option value="all">All-Time</option>
+<option value="recent">Most Recent Match</option>
+<option value="30d">Last 30 Days</option>
+<option value="7d">Last 7 Days</option>
+<option value="24h">Last 24 Hours</option>
+</select>
+</div>
+
+<!-- Profile Select Filter -->
+<div class="flex items-center space-x-2">
+<label class="text-xs text-slate-400 font-semibold">Profile:</label>
+<select id="stats-profile-select" onchange="renderStats()" class="flex-1 bg-slate-800 border border-slate-700 text-xs rounded-lg p-2 font-bold text-white">
+<!-- Dynamically populated -->
+</select>
+</div>
+
+<!-- Game Mode Filter -->
+<div class="flex items-center space-x-2">
+<label class="text-xs text-slate-400 font-semibold">Game Mode:</label>
+<select id="stats-gamemode-select" onchange="renderStats()" class="flex-1 bg-slate-800 border border-slate-700 text-xs rounded-lg p-2 font-bold text-amber-400">
+<option value="all">All Modes</option>
+<option value="301">301 Only</option>
+<option value="501">501 Only</option>
+<option value="701">701 Only</option>
+</select>
+</div>
+
+<!-- Stats Grid Display Cards (10 Cards) -->
+<div class="grid grid-cols-2 gap-2.5" id="stats-cards-container">
+<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex flex-col items-center">
+<span class="text-[10px] text-slate-400 uppercase font-bold">3-Dart Average</span>
+<span class="text-2xl font-black text-amber-400" id="stat-3dart-avg">0.0</span>
+</div>
+<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex flex-col items-center">
+<span class="text-[10px] text-slate-400 uppercase font-bold">First 9 Avg</span>
+<span class="text-2xl font-black text-emerald-400" id="stat-first9-avg">0.0</span>
+</div>
+<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex flex-col items-center">
+<span class="text-[10px] text-slate-400 uppercase font-bold">High Score</span>
+<span class="text-2xl font-black text-amber-300" id="stat-high-score">0</span>
+</div>
+<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex flex-col items-center">
+<span class="text-[10px] text-slate-400 uppercase font-bold">Best Leg</span>
+<span class="text-2xl font-black text-emerald-300" id="stat-best-leg">-</span>
+</div>
+<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex flex-col items-center">
+<span class="text-[10px] text-slate-400 uppercase font-bold">Match Win %</span>
+<span class="text-2xl font-black text-blue-400" id="stat-win-rate">0%</span>
+</div>
+<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex flex-col items-center">
+<span class="text-[10px] text-slate-400 uppercase font-bold">Leg Win %</span>
+<span class="text-2xl font-black text-cyan-400" id="stat-leg-win-pct">0%</span>
+</div>
+<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex flex-col items-center">
+<span class="text-[10px] text-slate-400 uppercase font-bold">Checkout %</span>
+<span class="text-2xl font-black text-purple-400" id="stat-checkout-pct">0%</span>
+</div>
+<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex flex-col items-center">
+<span class="text-[10px] text-slate-400 uppercase font-bold">Highest Checkout</span>
+<span class="text-2xl font-black text-rose-400" id="stat-high-checkout">0</span>
+</div>
+<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex flex-col items-center">
+<span class="text-[10px] text-slate-400 uppercase font-bold">Matches Played</span>
+<span class="text-2xl font-black text-teal-400" id="stat-legs-played">0</span>
+</div>
+<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex flex-col items-center">
+<span class="text-[10px] text-slate-400 uppercase font-bold">Total Legs Played</span>
+<span class="text-2xl font-black text-indigo-400" id="stat-total-legs-played">0</span>
+</div>
+</div>
+</div>
+
+<button onclick="playAudio('click'); showScreen('screen-menu')" class="w-full py-3 bg-slate-700 font-bold rounded-xl text-sm mt-2 border border-slate-600">
+Back to Main Menu
+</button>
+</section>
+
+</main>
+
+<!-- CREATE PROFILE MODAL -->
+<div id="new-profile-modal" role="dialog" aria-modal="true" aria-hidden="true" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+<div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 max-w-xs w-full space-y-3 shadow-2xl">
+<h3 class="text-lg font-bold text-amber-400">Create Unique Profile</h3>
+<div>
+<label class="text-xs text-slate-400 block mb-1">Player Name</label>
+<input type="text" id="new-profile-input" placeholder="Enter name..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-500 font-bold">
+</div>
+<div id="new-profile-error" class="text-xs text-rose-500 font-bold hidden"></div>
+<div class="grid grid-cols-2 gap-2 pt-1">
+<button onclick="playAudio('click'); closeNewProfileModal()" class="py-2.5 bg-slate-700 text-white font-bold rounded-lg text-xs border border-slate-600">
+Cancel
+</button>
+<button onclick="playAudio('submit'); confirmCreateProfile()" class="py-2.5 bg-emerald-600 text-white font-black rounded-lg text-xs border border-emerald-400">
+Save Profile
+</button>
+</div>
+</div>
+</div>
+
+<!-- TOAST / NON-BLOCKING ALERTS -->
+<div id="toast-container" aria-live="polite" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 space-y-2 w-full max-w-sm pointer-events-none"></div>
+
+<!-- WIN / LEG / SET PROGRESSION MODAL -->
+<div id="win-modal" role="dialog" aria-modal="true" aria-hidden="true" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+<div class="bg-slate-800 border-2 border-amber-500 rounded-2xl p-4 max-w-xs w-full text-center space-y-3 shadow-2xl">
+<i class="fa-solid fa-trophy text-4xl text-amber-400"></i>
+<div>
+<h3 class="text-xl font-black text-white" id="win-modal-title">GAME WON!</h3>
+<p class="text-xs text-slate-300 mt-1" id="win-modal-desc"></p>
+</div>
+<div class="grid grid-cols-2 gap-2 pt-2">
+<button onclick="playAudio('undo'); cancelWinAndUndo()" class="py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg text-xs border border-slate-600">
+<i class="fa-solid fa-rotate-left mr-1"></i>Undo Turn
+</button>
+<button onclick="playAudio('submit'); proceedAfterWin()" class="py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-lg text-xs border border-emerald-400">
+Continue
+</button>
+</div>
+</div>
+</div>
+
+<!-- HOME EXIT CONFIRMATION MODAL -->
+<div id="exit-modal" role="dialog" aria-modal="true" aria-hidden="true" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+<div class="bg-slate-800 border border-rose-500 rounded-2xl p-4 max-w-xs w-full text-center space-y-3 shadow-2xl">
+<i class="fa-solid fa-triangle-exclamation text-3xl text-rose-500"></i>
+<div>
+<h3 class="text-lg font-bold text-white">Leave Active Match?</h3>
+<p class="text-xs text-slate-300 mt-1">Your current match progress will NOT be saved in statistics if you exit.</p>
+</div>
+<div class="grid grid-cols-2 gap-2 pt-2">
+<button onclick="playAudio('click'); closeExitModal()" class="py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg text-xs border border-slate-600">
+Cancel
+</button>
+<button onclick="playAudio('submit'); executeHomeExit()" class="py-2.5 bg-rose-700 hover:bg-rose-600 text-white font-black rounded-lg text-xs border border-rose-500">
+Exit Without Saving
+</button>
+</div>
+</div>
+</div>
+
+<!-- DELETE PROFILE CONFIRMATION MODAL -->
+<div id="delete-profile-modal" role="dialog" aria-modal="true" aria-hidden="true" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+<div class="bg-slate-800 border border-rose-500 rounded-2xl p-4 max-w-xs w-full text-center space-y-3 shadow-2xl">
+<i class="fa-solid fa-user-slash text-3xl text-rose-500"></i>
+<div>
+<h3 class="text-lg font-bold text-white">Delete Profile?</h3>
+<p class="text-xs text-slate-300 mt-1">Are you sure you want to delete <b id="delete-profile-name" class="text-amber-400"></b>?</p>
+<p class="text-[10px] text-rose-400 mt-1">This will permanently remove the profile and ALL associated statistics!</p>
+</div>
+<div class="grid grid-cols-2 gap-2 pt-2">
+<button onclick="playAudio('click'); closeDeleteProfileModal()" class="py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg text-xs border border-slate-600">
+Cancel
+</button>
+<button onclick="playAudio('submit'); executeDeleteProfile()" class="py-2.5 bg-rose-700 hover:bg-rose-600 text-white font-black rounded-lg text-xs border border-rose-500">
+Delete
+</button>
+</div>
+</div>
+</div>
+
+</div>
+
+<!-- JAVASCRIPT APP LOGIC -->
+<script>
+// Register service worker and handle install prompt
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./service-worker.js')
+		.catch(err => console.warn('ServiceWorker failed', err));
+}
+
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+	e.preventDefault();
+	deferredInstallPrompt = e;
+	document.getElementById('btn-install').classList.remove('hidden');
+	console.log('PWA install available');
+});
+
+function promptInstall() {
+	if (!deferredInstallPrompt) return showToast('Install not available', 'info');
+	deferredInstallPrompt.prompt();
+	deferredInstallPrompt.userChoice.then(choice => {
+		if (choice.outcome === 'accepted') showToast('App installed to home screen', 'success');
+		else showToast('Install dismissed', 'info');
+		deferredInstallPrompt = null;
+		document.getElementById('btn-install').classList.add('hidden');
+	});
+}
+
+// Toast helper (non-blocking replacements for alert())
+function showToast(message, type = 'info', timeout = 3000) {
+	const container = document.getElementById('toast-container');
+	if (!container) return console.log(message);
+	const id = 'toast-' + Date.now();
+	const el = document.createElement('div');
+	el.id = id;
+	el.className = 'pointer-events-auto mx-auto bg-slate-800 border border-slate-700 text-sm text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2';
+	if (type === 'success') el.classList.add('bg-emerald-600');
+	if (type === 'error') el.classList.add('bg-rose-700');
+	el.innerText = message;
+	container.appendChild(el);
+	setTimeout(() => { el.classList.add('opacity-0'); try { container.removeChild(el); } catch(e){} }, timeout);
+}
+
+// Export SVG icon to PNG sizes (downloads 192 and 512)
+async function exportPngIcons() {
+	try {
+		const resp = await fetch('./icons/dartboard.svg');
+		const svgText = await resp.text();
+		const svg64 = btoa(unescape(encodeURIComponent(svgText)));
+		const imgSrc = 'data:image/svg+xml;base64,' + svg64;
+		const sizes = [192, 512];
+		for (const size of sizes) {
+			await new Promise((res, rej) => {
+				const img = new Image();
+				img.onload = () => {
+					const canvas = document.createElement('canvas');
+					canvas.width = size; canvas.height = size;
+					const ctx = canvas.getContext('2d');
+					ctx.fillStyle = '#0f172a';
+					ctx.fillRect(0,0,size,size);
+					// center the SVG image inside canvas
+					const scale = Math.min(size / img.width, size / img.height);
+					const w = img.width * scale, h = img.height * scale;
+					const dx = (size - w) / 2, dy = (size - h) / 2;
+					ctx.drawImage(img, dx, dy, w, h);
+					canvas.toBlob(blob => {
+						const a = document.createElement('a');
+						a.href = URL.createObjectURL(blob);
+						a.download = 'dartboard-' + size + '.png';
+						document.body.appendChild(a);
+						a.click();
+						a.remove();
+						res();
+					}, 'image/png');
+				};
+				img.onerror = rej;
+				img.src = imgSrc;
+			});
+		}
+		showToast('PNG icons downloaded (192 & 512)', 'success');
+	} catch (e) {
+		console.error(e);
+		showToast('Failed to export icons', 'error');
+	}
+}
+
+// ==========================================
+// AUDIO FEEDBACK SYSTEM (Web Audio API)
+// ==========================================
+let audioCtx = null;
+
+function playAudio(type = 'click') {
+try {
+if (!audioCtx) {
+audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+if (audioCtx.state === 'suspended') {
+audioCtx.resume();
+}
+
+const osc = audioCtx.createOscillator();
+const gainNode = audioCtx.createGain();
+osc.connect(gainNode);
+gainNode.connect(audioCtx.destination);
+
+const now = audioCtx.currentTime;
+
+if (type === 'click') {
+osc.type = 'sine';
+osc.frequency.setValueAtTime(600, now);
+gainNode.gain.setValueAtTime(0.08, now);
+gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+osc.start(now);
+osc.stop(now + 0.05);
+} else if (type === 'submit') {
+osc.type = 'triangle';
+osc.frequency.setValueAtTime(440, now);
+osc.frequency.setValueAtTime(880, now + 0.06);
+gainNode.gain.setValueAtTime(0.12, now);
+gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+osc.start(now);
+osc.stop(now + 0.15);
+} else if (type === 'clear') {
+osc.type = 'sawtooth';
+osc.frequency.setValueAtTime(300, now);
+osc.frequency.setValueAtTime(150, now + 0.05);
+gainNode.gain.setValueAtTime(0.08, now);
+gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+osc.start(now);
+osc.stop(now + 0.1);
+} else if (type === 'undo') {
+osc.type = 'sine';
+osc.frequency.setValueAtTime(500, now);
+osc.frequency.setValueAtTime(350, now + 0.06);
+gainNode.gain.setValueAtTime(0.1, now);
+gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+osc.start(now);
+osc.stop(now + 0.12);
+}
+} catch (e) {
+// Audio context blocked or unsupported without user interaction
+}
+}
+
+// ==========================================
+// DATA STRUCTURES & LOCAL STORAGE PERSISTENCE
+// ==========================================
+let profiles = JSON.parse(localStorage.getItem('darts_profiles')) || [];
+let matchStatsHistory = JSON.parse(localStorage.getItem('darts_stats_history')) || [];
+
+function saveState() {
+localStorage.setItem('darts_profiles', JSON.stringify(profiles));
+localStorage.setItem('darts_stats_history', JSON.stringify(matchStatsHistory));
+}
+
+// Default initial profile creation if empty
+if (profiles.length === 0) {
+profiles.push({
+id: 'prof_' + Date.now(),
+name: 'Player 1',
+favorites: [26, 41, 45, 60, 85, 100, 120, 140, 180]
+});
+saveState();
+}
+
+// ==========================================
+// APP STATE MANAGEMENT
+// ==========================================
+let currentGameType = '501';
+let selectedProfileIds = [profiles[0]?.id || 'none', 'none', 'none', 'none'];
+let activeEditingProfileId = profiles[0]?.id || null;
+let pendingWinningPlayer = null;
+let isMatchOver = false;
+let pendingTargetScreen = 'screen-menu';
+let pendingDeleteProfileId = null;
+
+let match = {
+sessionId: null,
+type: '501',
+legsToWin: 2,
+setsToWin: 1,
+startRule: 'alternating',
+startingPlayerIdx: 0,
+activePlayerIdx: 0,
+round: 1,
+history: [],
+isFinished: false,
+players: []
+};
+
+let currentInputString = "0";
+let perDartMultiplier = 1;
+let perDartThrows = [];
+
+// Helper function: Checkout attempt valid only for scores <= 50 that have a direct double finish
+function isCheckoutAvailable(score) {
+if (score === 50) return true;
+if (score >= 2 && score <= 40 && score % 2 === 0) return true;
+return false;
+}
+
+// ==========================================
+// UI SCREEN NAVIGATION & EXIT GUARD
+// ==========================================
+function showScreen(screenId) {
+['screen-menu', 'screen-x01', 'screen-profiles', 'screen-stats'].forEach(id => {
+document.getElementById(id).classList.add('hidden');
+});
+document.getElementById(screenId).classList.remove('hidden');
+
+if (screenId === 'screen-menu') renderPlayerPickers();
+if (screenId === 'screen-profiles') renderProfilesScreen();
+if (screenId === 'screen-stats') renderStats();
+}
+
+function confirmHomeExit() {
+const x01Screen = document.getElementById('screen-x01');
+if (!x01Screen.classList.contains('hidden') && !match.isFinished) {
+pendingTargetScreen = 'screen-menu';
+document.getElementById('exit-modal').classList.remove('hidden');
+} else {
+showScreen('screen-menu');
+}
+}
+
+function confirmHomeExitWithScreen(targetScreen) {
+const x01Screen = document.getElementById('screen-x01');
+if (!x01Screen.classList.contains('hidden') && !match.isFinished) {
+pendingTargetScreen = targetScreen;
+document.getElementById('exit-modal').classList.remove('hidden');
+} else {
+showScreen(targetScreen);
+}
+}
+
+function closeExitModal() {
+document.getElementById('exit-modal').classList.add('hidden');
+}
+
+function executeHomeExit() {
+document.getElementById('exit-modal').classList.add('hidden');
+// If exiting early without finishing match, save completed leg statistics without declaring match completion
+recordMatchStats(null, true, false);
+match.isFinished = true;
+showScreen(pendingTargetScreen);
+}
+
+function selectGameType(type) {
+currentGameType = type;
+
+const gameTypes = ['301', '501', '701'];
+gameTypes.forEach(gt => {
+const btn = document.getElementById('gt-' + gt);
+if (!btn) return;
+
+if (gt === type) {
+btn.className = "game-type-btn p-3 rounded-xl font-black text-base bg-amber-600 border border-amber-400 text-white active:scale-95 transition shadow-lg";
+} else {
+btn.className = "game-type-btn p-3 rounded-xl font-black text-base bg-slate-700 hover:bg-slate-600 border border-transparent text-slate-300 active:scale-95 transition";
+}
+});
+}
+
+function updateSelectedProfile(slotIdx, val) {
+selectedProfileIds[slotIdx] = val;
+}
+
+function renderPlayerPickers() {
+const container = document.getElementById('player-pickers-container');
+container.innerHTML = '';
+
+if (profiles.length === 0) {
+container.innerHTML = '<div class="text-center py-2 bg-slate-900 rounded-lg border border-dashed border-slate-700"><p class="text-xs text-amber-400 mb-1 font-bold">No Player Profiles Created</p><p class="text-[10px] text-slate-400 mb-2">Create unique profiles to begin tracking statistics.</p><button onclick="playAudio(\'click\'); openNewProfileModal()" class="px-3 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg">+ Create First Profile</button></div>';
+return;
+}
+
+for (let i = 0; i < 4; i++) {
+const div = document.createElement('div');
+div.className = "flex items-center space-x-2 text-xs";
+
+const currentVal = selectedProfileIds[i] || 'none';
+
+let options = '<option value="none"' + (currentVal === 'none' ? ' selected' : '') + '>-- None / Empty --</option>';
+options += profiles.map(p => '<option value="' + p.id + '"' + (p.id === currentVal ? ' selected' : '') + '>' + p.name + '</option>').join('');
+
+div.innerHTML = '<span class="text-slate-400 w-16 font-bold">Slot ' + (i + 1) + ':</span>' +
+'<select onchange="playAudio(\'click\'); updateSelectedProfile(' + i + ', this.value)" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 font-bold text-white">' +
+options +
+'</select>';
+container.appendChild(div);
+}
+}
+
+// ==========================================
+// PROFILE MANAGEMENT
+// ==========================================
+function openNewProfileModal() {
+document.getElementById('new-profile-input').value = '';
+document.getElementById('new-profile-error').classList.add('hidden');
+document.getElementById('new-profile-modal').classList.remove('hidden');
+}
+
+function closeNewProfileModal() {
+document.getElementById('new-profile-modal').classList.add('hidden');
+}
+
+function confirmCreateProfile() {
+const input = document.getElementById('new-profile-input').value.trim();
+const errorEl = document.getElementById('new-profile-error');
+
+if (!input) {
+errorEl.innerText = "Please enter a profile name.";
+errorEl.classList.remove('hidden');
+return;
+}
+
+if (profiles.some(p => p.name.toLowerCase() === input.toLowerCase())) {
+errorEl.innerText = "A profile with this name already exists.";
+errorEl.classList.remove('hidden');
+return;
+}
+
+const newProfile = {
+id: 'prof_' + Date.now(),
+name: input,
+favorites: [26, 41, 45, 60, 85, 100, 120, 140, 180]
+};
+
+profiles.push(newProfile);
+saveState();
+
+const emptySlotIdx = selectedProfileIds.indexOf('none');
+if (emptySlotIdx !== -1) {
+selectedProfileIds[emptySlotIdx] = newProfile.id;
+}
+
+activeEditingProfileId = newProfile.id;
+
+closeNewProfileModal();
+renderPlayerPickers();
+renderProfilesScreen();
+}
+
+function renderProfilesScreen() {
+const listContainer = document.getElementById('profiles-list-container');
+listContainer.innerHTML = '';
+
+if (profiles.length === 0) {
+listContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">No profiles available.</p>';
+return;
+}
+
+profiles.forEach(p => {
+const isSelected = p.id === activeEditingProfileId;
+const div = document.createElement('div');
+div.className = "p-2 rounded-xl border flex items-center justify-between " + (isSelected ? 'bg-amber-950/40 border-amber-500' : 'bg-slate-800 border-slate-700');
+
+div.innerHTML = '<div class="flex items-center space-x-2 cursor-pointer flex-1" onclick="playAudio(\'click\'); selectProfileForEditing(\'' + p.id + '\')">' +
+'<i class="fa-solid fa-circle-user text-amber-500 text-base"></i>' +
+'<span class="font-bold text-sm text-white">' + p.name + '</span>' +
+'</div>' +
+'<div class="flex items-center space-x-1.5">' +
+'<button onclick="playAudio(\'click\'); selectProfileForEditing(\'' + p.id + '\')" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-xs font-bold rounded text-amber-300">Edit Favs</button>' +
+'<button onclick="playAudio(\'click\'); promptDeleteProfile(\'' + p.id + '\')" class="px-2 py-1 bg-rose-900/60 hover:bg-rose-800 text-xs font-bold rounded text-rose-300"><i class="fa-solid fa-trash"></i></button>' +
+'</div>';
+listContainer.appendChild(div);
+});
+
+renderFavoritesEditGrid();
+}
+
+function selectProfileForEditing(id) {
+activeEditingProfileId = id;
+renderProfilesScreen();
+}
+
+function renderFavoritesEditGrid() {
+const prof = profiles.find(p => p.id === activeEditingProfileId);
+const titleEl = document.getElementById('favorites-profile-title');
+const gridEl = document.getElementById('favorites-edit-grid');
+
+if (!prof) {
+titleEl.innerText = "Programmable Quick Scores";
+gridEl.innerHTML = '<p class="text-xs text-slate-400 col-span-3 text-center">Select a profile above to edit favorites.</p>';
+return;
+}
+
+titleEl.innerText = "Programmable Quick Scores (" + prof.name + ")";
+gridEl.innerHTML = '';
+
+const favs = prof.favorites || [26, 41, 45, 60, 85, 100, 120, 140, 180];
+favs.forEach((val, idx) => {
+const input = document.createElement('input');
+input.type = 'number';
+input.max = 180;
+input.min = 0;
+input.value = val;
+input.id = 'fav-input-' + idx;
+input.className = "bg-slate-900 border border-slate-700 rounded-lg p-2 text-center text-sm font-bold text-amber-400 focus:outline-none focus:border-amber-500";
+gridEl.appendChild(input);
+});
+}
+
+function saveProfileFavorites() {
+const prof = profiles.find(p => p.id === activeEditingProfileId);
+if (!prof) return;
+
+const newFavs = [];
+for (let i = 0; i < 9; i++) {
+const val = parseInt(document.getElementById('fav-input-' + i).value) || 0;
+newFavs.push(Math.min(180, Math.max(0, val)));
+}
+
+prof.favorites = newFavs;
+saveState();
+	showToast("Saved quick score favorites for " + prof.name + "!", 'success');
+}
+
+function promptDeleteProfile(id) {
+const prof = profiles.find(p => p.id === id);
+if (!prof) return;
+
+pendingDeleteProfileId = id;
+document.getElementById('delete-profile-name').innerText = prof.name;
+document.getElementById('delete-profile-modal').classList.remove('hidden');
+}
+
+function closeDeleteProfileModal() {
+document.getElementById('delete-profile-modal').classList.add('hidden');
+pendingDeleteProfileId = null;
+}
+
+function executeDeleteProfile() {
+if (!pendingDeleteProfileId) return;
+
+// Remove deleted profile's statistics from match history
+matchStatsHistory.forEach(m => {
+m.players = m.players.filter(p => p.id !== pendingDeleteProfileId);
+});
+matchStatsHistory = matchStatsHistory.filter(m => m.players.length > 0);
+
+profiles = profiles.filter(p => p.id !== pendingDeleteProfileId);
+selectedProfileIds = selectedProfileIds.map(id => id === pendingDeleteProfileId ? 'none' : id);
+
+if (activeEditingProfileId === pendingDeleteProfileId) {
+activeEditingProfileId = profiles[0]?.id || null;
+}
+
+saveState();
+closeDeleteProfileModal();
+renderPlayerPickers();
+renderProfilesScreen();
+}
+
+// ==========================================
+// START MATCH
+// ==========================================
+function startMatch() {
+if (profiles.length === 0) {
+openNewProfileModal();
+return;
+}
+
+const activeIds = selectedProfileIds.filter(id => id !== 'none');
+
+if (activeIds.length === 0) {
+		showToast("Please select at least one player to start a match!", 'error');
+return;
+}
+
+const uniqueProfiles = new Set(activeIds);
+if (uniqueProfiles.size < activeIds.length) {
+		showToast("Please select a different profile for each active slot!", 'error');
+return;
+}
+
+const legsBestOf = parseInt(document.getElementById('select-legs').value);
+const setsBestOf = parseInt(document.getElementById('select-sets').value);
+const startRule = document.getElementById('select-start-rule').value;
+
+const legsToWin = Math.floor(legsBestOf / 2) + 1;
+const setsToWin = Math.floor(setsBestOf / 2) + 1;
+
+match = {
+sessionId: 'session_' + Date.now(),
+type: currentGameType,
+legsToWin: legsToWin,
+setsToWin: setsToWin,
+startRule: startRule,
+startingPlayerIdx: 0,
+activePlayerIdx: 0,
+round: 1,
+history: [],
+isFinished: false,
+players: activeIds.map(id => {
+const prof = profiles.find(p => p.id === id);
+return{
+id: id,
+name: prof ? prof.name : 'Player',
+score: parseInt(currentGameType),
+startingScore: parseInt(currentGameType) || 0,
+setsWon: 0,
+legsWon: 0,
+totalLegsWon: 0,
+totalLegsPlayed: 0,
+bestLegDarts: null,
+highScore: 0,
+totalDartsThrown: 0,
+totalPointsScored: 0,
+legDartsThrown: 0,
+legPointsScored: 0,
+first9Points: 0,
+first9Darts: 0,
+checkoutAttempts: 0,
+checkoutSuccess: 0,
+highestCheckout: 0,
+lastTurnScore: null,
+wonLegsDartsHistory: []
+};
+})
+};
+
+setupX01Screen();
+showScreen('screen-x01');
+}
+
+// ==========================================
+// X01 GAMEPLAY LOGIC
+// ==========================================
+function setupX01Screen() {
+document.getElementById('x01-game-title').innerText = match.type;
+currentInputString = "0";
+perDartThrows = [];
+document.getElementById('x01-bust-alert').classList.add('hidden');
+renderX01UI();
+}
+
+function renderX01UI() {
+document.getElementById('x01-sets-display').innerText = match.players.map(p => p.setsWon).join('-');
+document.getElementById('x01-legs-display').innerText = match.players.map(p => p.legsWon).join('-');
+document.getElementById('x01-round-display').innerText = match.round;
+
+const activeP = match.players[match.activePlayerIdx];
+
+const prevScoreDisplay = activeP.lastTurnScore !== null ? activeP.lastTurnScore : '-';
+document.getElementById('x01-prev-score').innerText = prevScoreDisplay;
+
+const grid = document.getElementById('x01-players-grid');
+const count = match.players.length;
+grid.className = "grid gap-1.5 my-0.5 " + (count === 1 ? 'grid-cols-1' : count === 2 ? 'grid-cols-2' : count === 3 ? 'grid-cols-3' : 'grid-cols-4');
+grid.innerHTML = '';
+
+match.players.forEach((p, idx) => {
+const isActive = idx === match.activePlayerIdx;
+const div = document.createElement('div');
+
+let avg = "0.0";
+if (p.legDartsThrown > 0) {
+avg = ((p.legPointsScored / p.legDartsThrown) * 3).toFixed(1);
+}
+
+div.className = "p-1.5 rounded-xl border flex flex-col justify-between transition-all relative overflow-hidden " +
+(isActive ? 'bg-amber-950/60 border-amber-400 shadow-md ring-1 ring-amber-400/50' : 'bg-slate-800/80 border-slate-700/80 opacity-85');
+
+div.innerHTML = '<div class="flex justify-between items-center mb-0.5">' +
+'<span class="font-bold text-xs truncate max-w-[70px] ' + (isActive ? 'text-amber-300' : 'text-slate-300') + '">' + p.name + '</span>' +
+'<span class="text-[10px] text-slate-400 font-bold">3D: ' + avg + '</span>' +
+'</div>' +
+'<div class="text-center py-0.5 bg-slate-950/60 rounded-lg border border-slate-800/60 my-0.5">' +
+'<span class="text-3xl font-black font-mono tracking-tight ' + (isActive ? 'text-amber-400' : 'text-slate-200') + '">' + p.score + '</span>' +
+'</div>' +
+'<div class="flex justify-between items-center text-[10px] text-slate-400 font-semibold">' +
+'<span>Legs: <b class="text-white">' + p.legsWon + '</b></span>' +
+'<span>Darts: <b class="text-white">' + p.legDartsThrown + '</b></span>' +
+'</div>';
+
+grid.appendChild(div);
+});
+
+// Keypad Mode switching based on active player current score <= 170
+const totalKeypad = document.getElementById('x01-keypad-total');
+const perdartKeypad = document.getElementById('x01-keypad-perdart');
+const badge = document.getElementById('input-mode-badge');
+
+if (activeP.score <= 170) {
+totalKeypad.classList.add('hidden');
+perdartKeypad.classList.remove('hidden');
+badge.innerText = "PER-DART MODE (<=170)";
+badge.className = "text-[9px] text-emerald-400 font-bold uppercase tracking-widest";
+renderPerDartDisplay();
+} else {
+perdartKeypad.classList.add('hidden');
+totalKeypad.classList.remove('hidden');
+badge.innerText = "TOTAL SCORE";
+badge.className = "text-[9px] text-slate-400 font-bold uppercase tracking-widest";
+renderFavoritesBar();
+updateTotalInputDisplay();
+}
+}
+
+// ------------------------------------------
+// TOTAL INPUT KEYPAD LOGIC
+// ------------------------------------------
+function renderFavoritesBar() {
+const activeP = match.players[match.activePlayerIdx];
+const prof = profiles.find(p => p.id === activeP.id);
+const favs = prof?.favorites || [26, 41, 45, 60, 85, 100, 120, 140, 180];
+
+const bar = document.getElementById('x01-favorites-bar');
+bar.innerHTML = '';
+
+favs.forEach(val => {
+const btn = document.createElement('button');
+btn.onclick = () => { playAudio('click'); quickInputScore(val); };
+btn.className = "bg-slate-800 hover:bg-slate-700 active:bg-amber-600 text-amber-300 font-black py-1.5 rounded-lg border border-slate-700 text-base shadow transition";
+btn.innerText = val;
+bar.appendChild(btn);
+});
+}
+
+function appendNum(num) {
+if (currentInputString === "0") {
+currentInputString = num.toString();
+} else if (currentInputString.length < 3) {
+currentInputString += num.toString();
+}
+updateTotalInputDisplay();
+}
+
+function clearInput() {
+currentInputString = "0";
+updateTotalInputDisplay();
+}
+
+function quickInputScore(val) {
+currentInputString = val.toString();
+updateTotalInputDisplay();
+}
+
+function updateTotalInputDisplay() {
+document.getElementById('x01-input-display').innerText = currentInputString;
+}
+
+// ------------------------------------------
+// PER-DART KEYPAD LOGIC
+// ------------------------------------------
+function setDartMultiplier(mult) {
+perDartMultiplier = mult;
+['mod-single', 'mod-double', 'mod-triple'].forEach((id, idx) => {
+const btn = document.getElementById(id);
+if (idx + 1 === mult) {
+btn.className = "bg-amber-600 py-2.5 rounded-lg border border-amber-400 shadow text-white";
+} else {
+btn.className = "bg-slate-700 py-2.5 rounded-lg border border-slate-600 shadow text-slate-300";
+}
+});
+}
+
+function inputPerDart(baseVal) {
+if (perDartThrows.length >= 3) return;
+
+let mult = perDartMultiplier;
+if (baseVal === 25) {
+if (mult === 3) mult = 1;
+}
+
+const pts = baseVal * mult;
+const isDouble = (mult === 2);
+
+perDartThrows.push({
+base: baseVal,
+mult: mult,
+pts: pts,
+isDouble: isDouble
+});
+
+setDartMultiplier(1);
+renderPerDartDisplay();
+}
+
+function clearPerDart() {
+perDartThrows = [];
+setDartMultiplier(1);
+renderPerDartDisplay();
+}
+
+function renderPerDartDisplay() {
+for (let i = 0; i < 3; i++) {
+const el = document.getElementById('dart-' + (i + 1) + '-val');
+if (perDartThrows[i]) {
+const t = perDartThrows[i];
+const multPrefix = t.mult === 3 ? 'T' : t.mult === 2 ? 'D' : 'S';
+const text = t.base === 0 ? 'MISS' : t.base === 25 && t.mult === 2 ? 'BULL' : multPrefix + t.base;
+el.innerText = 'D' + (i + 1) + ': ' + text;
+el.className = "py-1 rounded bg-amber-900/60 text-amber-300 border border-amber-500/50 font-bold text-xs";
+} else {
+el.innerText = 'D' + (i + 1) + ': -';
+el.className = "py-1 rounded bg-slate-800 font-bold text-xs text-slate-400";
+}
+}
+
+const currentSum = perDartThrows.reduce((sum, t) => sum + t.pts, 0);
+document.getElementById('x01-input-display').innerText = currentSum;
+}
+
+// ------------------------------------------
+// SCORE CONFIRMATION & BUST CHECKING
+// ------------------------------------------
+function confirmScoreX01() {
+const activeP = match.players[match.activePlayerIdx];
+let scoredPoints = 0;
+let dartsThrown = 3;
+let legCheckoutAttemptsCount = 0;
+let isSuccessfulCheckout = false;
+let isBusted = false;
+
+if (activeP.score <= 170) {
+while (perDartThrows.length < 3) {
+perDartThrows.push({
+base: 0,
+mult: 1,
+pts: 0,
+isDouble: false
+});
+}
+
+dartsThrown = 3;
+let runningScore = activeP.score;
+
+for (let i = 0; i < perDartThrows.length; i++) {
+if (isCheckoutAvailable(runningScore)) {
+legCheckoutAttemptsCount++;
+}
+
+const t = perDartThrows[i];
+
+if (t.pts > runningScore) {
+isBusted = true;
+break;
+} else if (runningScore - t.pts === 1) {
+isBusted = true;
+break;
+} else if (runningScore - t.pts === 0) {
+if (t.isDouble || (t.base === 25 && t.mult === 2)) {
+runningScore = 0;
+isSuccessfulCheckout = true;
+dartsThrown = i + 1;
+scoredPoints = activeP.score;
+break;
+} else {
+isBusted = true;
+break;
+}
+} else {
+runningScore -= t.pts;
+scoredPoints += t.pts;
+}
+}
+
+if (isBusted) {
+scoredPoints = 0;
+dartsThrown = 3;
+triggerBustAlert("BUST! Remaining score unchanged.");
+}
+
+} else {
+scoredPoints = parseInt(currentInputString) || 0;
+		if (scoredPoints > 180) {
+			showToast("Maximum turn score in X01 is 180!", 'error');
+			return;
+		}
+
+// Any attempt to leave a score of 1, or reach 0 from a score > 170 (max checkout is 170) is a BUST
+if (scoredPoints > activeP.score || (activeP.score - scoredPoints === 1) || (activeP.score - scoredPoints === 0 && activeP.score > 170)) {
+scoredPoints = 0;
+dartsThrown = 3;
+isBusted = true;
+triggerBustAlert("BUST! Cannot checkout scores over 170.");
+} else if (activeP.score - scoredPoints === 0) {
+isSuccessfulCheckout = true;
+}
+}
+
+saveTurnHistoryState();
+
+// Record first 9 statistics per leg (check legDartsThrown before incrementing)
+if (activeP.legDartsThrown < 9) {
+activeP.first9Points += scoredPoints;
+activeP.first9Darts += dartsThrown;
+}
+
+activeP.totalDartsThrown += dartsThrown;
+activeP.totalPointsScored += scoredPoints;
+activeP.legDartsThrown += dartsThrown;
+activeP.legPointsScored += scoredPoints;
+activeP.lastTurnScore = scoredPoints;
+
+if (scoredPoints > (activeP.highScore || 0)) {
+activeP.highScore = scoredPoints;
+}
+
+activeP.checkoutAttempts += legCheckoutAttemptsCount;
+
+activeP.score -= scoredPoints;
+
+if (activeP.score === 0) {
+activeP.checkoutSuccess += 1;
+if (scoredPoints > activeP.highestCheckout) {
+activeP.highestCheckout = scoredPoints;
+}
+handleLegWin(activeP);
+return;
+}
+
+advanceTurn();
+
+currentInputString = "0";
+perDartThrows = [];
+renderX01UI();
+}
+
+function triggerBustAlert(msg) {
+const alertBox = document.getElementById('x01-bust-alert');
+document.getElementById('bust-alert-text').innerText = msg;
+alertBox.classList.remove('hidden');
+setTimeout(() => {
+alertBox.classList.add('hidden');
+}, 3500);
+}
+
+function advanceTurn() {
+match.activePlayerIdx = (match.activePlayerIdx + 1) % match.players.length;
+if (match.activePlayerIdx === match.startingPlayerIdx) {
+match.round += 1;
+}
+}
+
+// ------------------------------------------
+// UNDO TURN SYSTEM
+// ------------------------------------------
+function saveTurnHistoryState() {
+const stateCopy = {
+startingPlayerIdx: match.startingPlayerIdx,
+activePlayerIdx: match.activePlayerIdx,
+round: match.round,
+players: match.players.map(p => ({
+...p,
+wonLegsDartsHistory: [...(p.wonLegsDartsHistory || [])]
+}))
+};
+match.history.push(stateCopy);
+if (match.history.length > 20) match.history.shift();
+}
+
+function undoLastTurn() {
+if (match.history.length === 0) {
+	showToast("No turns to undo in this leg!", 'info');
+return;
+}
+
+const previousState = match.history.pop();
+match.startingPlayerIdx = previousState.startingPlayerIdx;
+match.activePlayerIdx = previousState.activePlayerIdx;
+match.round = previousState.round;
+match.players = previousState.players.map(p => ({
+...p,
+wonLegsDartsHistory: [...(p.wonLegsDartsHistory || [])]
+}));
+
+currentInputString = "0";
+perDartThrows = [];
+document.getElementById('x01-bust-alert').classList.add('hidden');
+renderX01UI();
+}
+
+// ------------------------------------------
+// LEG / SET / MATCH WIN HANDLERS
+// ------------------------------------------
+function handleLegWin(winningPlayer) {
+winningPlayer.legsWon += 1;
+winningPlayer.totalLegsWon += 1;
+if (!winningPlayer.wonLegsDartsHistory) winningPlayer.wonLegsDartsHistory = [];
+winningPlayer.wonLegsDartsHistory.push(winningPlayer.legDartsThrown);
+
+if (winningPlayer.bestLegDarts === null || winningPlayer.legDartsThrown < winningPlayer.bestLegDarts) {
+winningPlayer.bestLegDarts = winningPlayer.legDartsThrown;
+}
+
+pendingWinningPlayer = winningPlayer;
+
+const modalTitle = document.getElementById('win-modal-title');
+const modalDesc = document.getElementById('win-modal-desc');
+
+if (winningPlayer.legsWon >= match.legsToWin) {
+winningPlayer.setsWon += 1;
+
+if (winningPlayer.setsWon >= match.setsToWin) {
+isMatchOver = true;
+modalTitle.innerText = "MATCH WON!";
+modalDesc.innerText = winningPlayer.name + " has won the match!";
+} else {
+isMatchOver = false;
+modalTitle.innerText = "SET WON!";
+modalDesc.innerText = winningPlayer.name + " won Set " + winningPlayer.setsWon + "!";
+}
+} else {
+isMatchOver = false;
+modalTitle.innerText = "LEG WON!";
+modalDesc.innerText = winningPlayer.name + " checked out " + winningPlayer.lastTurnScore + " to win the leg!";
+}
+
+document.getElementById('win-modal').classList.remove('hidden');
+}
+
+function cancelWinAndUndo() {
+document.getElementById('win-modal').classList.add('hidden');
+
+// Revert leg/set count changes if the win was opened
+if (pendingWinningPlayer) {
+if (isMatchOver) {
+pendingWinningPlayer.setsWon -= 1;
+} else if (document.getElementById('win-modal-title').innerText.includes("SET")) {
+pendingWinningPlayer.setsWon -= 1;
+}
+pendingWinningPlayer.legsWon -= 1;
+pendingWinningPlayer.totalLegsWon -= 1;
+if (pendingWinningPlayer.wonLegsDartsHistory && pendingWinningPlayer.wonLegsDartsHistory.length > 0) {
+pendingWinningPlayer.wonLegsDartsHistory.pop();
+}
+pendingWinningPlayer.bestLegDarts = pendingWinningPlayer.wonLegsDartsHistory && pendingWinningPlayer.wonLegsDartsHistory.length > 0
+? Math.min(...pendingWinningPlayer.wonLegsDartsHistory)
+: null;
+pendingWinningPlayer = null;
+}
+
+isMatchOver = false;
+undoLastTurn();
+}
+
+function proceedAfterWin() {
+document.getElementById('win-modal').classList.add('hidden');
+
+match.players.forEach(p => {
+p.totalLegsPlayed = (p.totalLegsPlayed || 0) + 1;
+});
+
+if (isMatchOver) {
+const winnerId = pendingWinningPlayer ? pendingWinningPlayer.id : null;
+const gameType = match.type;
+
+// Save full completed match
+recordMatchStats(pendingWinningPlayer, false, true);
+match.isFinished = true;
+
+// Pre-set filters on the statistics screen for immediate review
+document.getElementById('stats-time-filter').value = 'recent';
+document.getElementById('stats-gamemode-select').value = gameType;
+if (winnerId) {
+const profileSelect = document.getElementById('stats-profile-select');
+profileSelect.innerHTML = profiles.map(p => '<option value="' + p.id + '"' + (p.id === winnerId ? ' selected' : '') + '>' + p.name + '</option>').join('');
+profileSelect.value = winnerId;
+}
+
+showScreen('screen-stats');
+return;
+}
+
+if (document.getElementById('win-modal-title').innerText.includes("SET")) {
+match.players.forEach(p => p.legsWon = 0);
+}
+
+match.players.forEach(p => {
+p.score = parseInt(match.type);
+p.startingScore = parseInt(match.type);
+p.lastTurnScore = null;
+p.legDartsThrown = 0;
+p.legPointsScored = 0;
+});
+
+if (match.startRule === 'alternating') {
+match.startingPlayerIdx = (match.startingPlayerIdx + 1) % match.players.length;
+} else if (match.startRule === 'loser' && pendingWinningPlayer) {
+const winnerIdx = match.players.findIndex(p => p.id === pendingWinningPlayer.id);
+match.startingPlayerIdx = (winnerIdx + 1) % match.players.length;
+}
+
+match.activePlayerIdx = match.startingPlayerIdx;
+match.round = 1;
+match.history = [];
+pendingWinningPlayer = null;
+
+currentInputString = "0";
+perDartThrows = [];
+renderX01UI();
+}
+
+// ==========================================
+// STATISTICS RECORDING & AGGREGATION
+// ==========================================
+function recordMatchStats(winner, isAbandoned = false, isCompleted = false) {
+const totalLegsInMatch = match.players.reduce((sum, p) => sum + (p.totalLegsWon || 0), 0);
+
+// Do not save anything if no legs were completed
+if (totalLegsInMatch === 0) return;
+
+const matchRecord = {
+sessionId: match.sessionId,
+timestamp: Date.now(),
+gameType: match.type,
+winnerId: winner ? winner.id : null,
+isAbandoned: isAbandoned,
+isMatchCompleted: isCompleted,
+totalLegsPlayed: totalLegsInMatch,
+players: match.players.map(p => ({
+id: p.id,
+name: p.name,
+score: p.score,
+setsWon: p.setsWon,
+legsWon: p.totalLegsWon,
+totalLegsPlayed: p.totalLegsPlayed || 0,
+bestLegDarts: p.bestLegDarts,
+highScore: p.highScore || 0,
+totalDartsThrown: p.totalDartsThrown,
+totalPointsScored: p.totalPointsScored,
+first9Points: p.first9Points,
+first9Darts: p.first9Darts,
+checkoutAttempts: p.checkoutAttempts,
+checkoutSuccess: p.checkoutSuccess,
+highestCheckout: p.highestCheckout,
+isWinner: winner ? p.id === winner.id : false
+}))
+};
+
+// Replace existing record if saving incremental updates from same session ID
+const existingIndex = matchStatsHistory.findIndex(m => m.sessionId === match.sessionId);
+if (existingIndex !== -1) {
+matchStatsHistory[existingIndex] = matchRecord;
+} else {
+matchStatsHistory.push(matchRecord);
+}
+
+saveState();
+}
+
+function renderStats() {
+const profileSelect = document.getElementById('stats-profile-select');
+const timeFilter = document.getElementById('stats-time-filter').value;
+const gameModeFilter = document.getElementById('stats-gamemode-select').value;
+
+const currentProfVal = profileSelect.value || (profiles[0]?.id || 'none');
+profileSelect.innerHTML = profiles.map(p => '<option value="' + p.id + '"' + (p.id === currentProfVal ? ' selected' : '') + '>' + p.name + '</option>').join('');
+
+const selectedProfId = profileSelect.value;
+if (!selectedProfId || profiles.length === 0) return;
+
+const now = Date.now();
+
+// Filter matches relevant to the currently selected profile and game mode
+let playerRelevantMatches = matchStatsHistory.filter(m => {
+const hasPlayer = m.players && m.players.some(p => p.id === selectedProfId);
+if (!hasPlayer) return false;
+if (gameModeFilter !== 'all' && m.gameType !== gameModeFilter) return false;
+return true;
+});
+
+// Apply timeframe filter
+let filteredMatches = playerRelevantMatches.filter(m => {
+const mTime = m.timestamp || now;
+if (timeFilter === 'recent') {
+return m === playerRelevantMatches[playerRelevantMatches.length - 1];
+} else if (timeFilter === '24h') {
+return (now - mTime) <= (24 * 60 * 60 * 1000);
+} else if (timeFilter === '7d') {
+return (now - mTime) <= (7 * 24 * 60 * 60 * 1000);
+} else if (timeFilter === '30d') {
+return (now - mTime) <= (30 * 24 * 60 * 60 * 1000);
+}
+return true;
+});
+
+let matchesPlayed = 0;
+let matchesWon = 0;
+let legsWon = 0;
+let totalLegsPlayed = 0;
+let totalLegsInMatches = 0;
+let totalPoints = 0;
+let totalDarts = 0;
+let first9Points = 0;
+let first9Darts = 0;
+let checkoutAttempts = 0;
+let checkoutSuccess = 0;
+let highestCheckout = 0;
+let overallHighScore = 0;
+let bestLegOverall = null;
+
+filteredMatches.forEach(m => {
+const playerStats = m.players.find(p => p.id === selectedProfId);
+if (playerStats) {
+// Matches played and match win rate count ONLY if the match was fully completed
+if (m.isMatchCompleted) {
+matchesPlayed++;
+if (playerStats.isWinner) matchesWon++;
+}
+
+const pLegsWon = playerStats.legsWon || 0;
+legsWon += pLegsWon;
+
+totalLegsPlayed += playerStats.totalLegsPlayed || pLegsWon || 0;
+
+if (playerStats.bestLegDarts !== null && playerStats.bestLegDarts !== undefined) {
+if (bestLegOverall === null || playerStats.bestLegDarts < bestLegOverall) {
+bestLegOverall = playerStats.bestLegDarts;
+}
+}
+
+let sumLegs = 0;
+if (m.totalLegsPlayed && m.totalLegsPlayed > 0) {
+sumLegs = m.totalLegsPlayed;
+} else {
+m.players.forEach(p => sumLegs += (p.legsWon || 0));
+}
+totalLegsInMatches += Math.max(sumLegs, 1);
+
+totalPoints += playerStats.totalPointsScored || 0;
+totalDarts += playerStats.totalDartsThrown || 0;
+first9Points += playerStats.first9Points || 0;
+first9Darts += playerStats.first9Darts || 0;
+checkoutAttempts += playerStats.checkoutAttempts || 0;
+checkoutSuccess += playerStats.checkoutSuccess || 0;
+
+if ((playerStats.highScore || 0) > overallHighScore) {
+overallHighScore = playerStats.highScore;
+}
+
+if ((playerStats.highestCheckout || 0) > highestCheckout) {
+highestCheckout = playerStats.highestCheckout;
+}
+}
+});
+
+const avg3Dart = totalDarts > 0 ? ((totalPoints / totalDarts) * 3).toFixed(1) : "0.0";
+const first9Avg = first9Darts > 0 ? ((first9Points / first9Darts) * 3).toFixed(1) : "0.0";
+const winPct = matchesPlayed > 0 ? Math.round((matchesWon / matchesPlayed) * 100) + "%" : "0%";
+const legWinPct = totalLegsInMatches > 0 ? Math.round((legsWon / totalLegsInMatches) * 100) + "%" : "0%";
+const checkoutPct = checkoutAttempts > 0 ? Math.round((checkoutSuccess / checkoutAttempts) * 100) + "%" : "0%";
+
+document.getElementById('stat-3dart-avg').innerText = avg3Dart;
+document.getElementById('stat-first9-avg').innerText = first9Avg;
+document.getElementById('stat-high-score').innerText = overallHighScore;
+document.getElementById('stat-best-leg').innerText = bestLegOverall !== null ? (bestLegOverall + " Darts") : "-";
+document.getElementById('stat-win-rate').innerText = winPct;
+document.getElementById('stat-leg-win-pct').innerText = legWinPct;
+document.getElementById('stat-checkout-pct').innerText = checkoutPct;
+document.getElementById('stat-high-checkout').innerText = highestCheckout;
+document.getElementById('stat-legs-played').innerText = matchesPlayed;
+document.getElementById('stat-total-legs-played').innerText = totalLegsPlayed;
+}
+
+renderPlayerPickers();
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "id": "my-darts-app",
+  "name": "My Darts App",
+  "short_name": "Darts",
+  "description": "Score and Stats Tracker for X01 darts games",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "./icons/dartboard.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}
