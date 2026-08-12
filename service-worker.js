@@ -24,12 +24,29 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  // Serve the app shell for navigation requests (SPA routing / when opening the PWA).
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      caches.match('./index.html').then(cached => {
+        if (cached) return cached;
+        return fetch(event.request).then(resp => {
+          // cache the index.html for future navigations
+          return caches.open(CACHE_NAME).then(cache => {
+            try { cache.put('./index.html', resp.clone()); } catch (e) { }
+            return resp;
+          });
+        }).catch(() => caches.match('./index.html'));
+      })
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
       return fetch(event.request).then(resp => {
         return caches.open(CACHE_NAME).then(cache => {
-          try { cache.put(event.request, resp.clone()); } catch (e) { /* non-opaque */ }
+          try { cache.put(event.request, resp.clone()); } catch (e) { }
           return resp;
         });
       }).catch(() => caches.match('./index.html'));
